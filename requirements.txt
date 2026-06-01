@@ -1,0 +1,9 @@
+python-telegram-bot==20.7
+aiohttp
+websockets
+pandas
+pandas-ta
+numpy
+anthropic
+finnhub-python
+python-dotenv
