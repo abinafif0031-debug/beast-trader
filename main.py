@@ -45,11 +45,13 @@ async def main():
     asyncio.create_task(tm.monitor_trades())
     asyncio.create_task(run_web_server())
 
-    await bot.app.initialize()
+    async with bot.app:
     await bot.app.start()
-    await bot.app.updater.start_polling()
     print("Bot polling started")
-    await asyncio.Event().wait()
+    # تشغيل البولينج (يغني عن updater)
+    await bot.app.updater.start_polling()   # 👈 غلط، امسح هذا السطر
+    # استخدم هذا بداله:
+    await bot.app.run_polling()             # 👈 هذا الصحيح
 
 if __name__ == "__main__":
     asyncio.run(main())
