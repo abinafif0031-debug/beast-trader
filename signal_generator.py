@@ -27,7 +27,7 @@ class SignalGenerator:
         anthropic = Anthropic(api_key=ANTHROPIC_API_KEY)
         prompt = f"حلل هذه العناوين وأعط تقييماً من 1 (سلبي جداً) إلى 5 (إيجابي جداً):\n" + "\n".join(headlines) + "\nأجب برقم فقط."
         resp = anthropic.messages.create(
-            model="claude-3-haiku-20240307",
+            model="claude-3-5-haiku-20241022",
             max_tokens=5,
             messages=[{"role":"user","content":prompt}]
         )
