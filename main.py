@@ -11,6 +11,31 @@ import bot_handlers
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
+# ========== دالة اختبار كلود (مؤقتة) ==========
+async def test_claude_model():
+    from anthropic import Anthropic
+    from config import ANTHROPIC_API_KEY
+    anthropic = Anthropic(api_key=ANTHROPIC_API_KEY)
+    models_to_try = [
+        "claude-3-haiku-20240307",
+        "claude-3-5-haiku-20241022",
+        "claude-3-5-haiku-latest",
+        "claude-3-opus-20240229",
+    ]
+    for model in models_to_try:
+        try:
+            resp = anthropic.messages.create(
+                model=model,
+                max_tokens=10,
+                messages=[{"role":"user","content":"Say test"}]
+            )
+            logger.info(f"✅ النموذج الشغال: {model}")
+            return model
+        except Exception as e:
+            logger.warning(f"❌ {model}: {e}")
+    return None
+# =============================================
+
 async def health_check(request):
     return web.Response(text="OK")
 
@@ -35,10 +60,23 @@ async def main():
     init_db()
     logger.info("قاعدة البيانات جاهزة")
 
+    # 🔍 اختبر النموذج أولاً
+    model_name = await test_claude_model()
+    if model_name:
+        logger.info(f"Claude model selected: {model_name}")
+    else:
+        logger.error("No valid Claude model found – سيتم تعطيل تحليل الأخبار")
+
     md = MarketData(SYMBOLS)
     asyncio.create_task(safe_twelvedata_ws(md))
 
     sig_gen = SignalGenerator(md)
+    # إذا وجدنا نموذج صحيح، نحدث المزاج العام (اختيارياً)
+    if model_name:
+        await sig_gen.update_sentiment()   # الآن يمكننا تفعيلها لأننا سنستخدم النموذج الصحيح
+    else:
+        logger.warning("تخطي تحديث المزاج العام لعدم وجود نموذج")
+
     bot = bot_handlers.TradingBot(TELEGRAM_BOT_TOKEN, sig_gen, md)
     tm = TradeManager(md, bot)
 
@@ -57,7 +95,7 @@ async def main():
     asyncio.create_task(tm.monitor_trades())
     asyncio.create_task(run_web_server())
 
-    # تشغيل البوت بطريقة متوافقة مع asyncio
+    # تشغيل البوت
     logger.info("Starting bot...")
     await bot.app.initialize()
     await bot.app.start()
