@@ -27,11 +27,17 @@ class SignalGenerator:
 
     async def evaluate_symbol(self, symbol):
         df_15 = await self.md.get_historical_candles(symbol, '15min', 100)
-        df_1h = await self.md.get_historical_candles(symbol, '1h', 100)
-        df_1m = await self.md.get_historical_candles(symbol, '1min', 60)
-        df_5m = await self.md.get_historical_candles(symbol, '5min', 60)
-        if df_15.empty or df_1h.empty:
-            return None
+df_1h = await self.md.get_historical_candles(symbol, '1h', 100)
+df_1m = await self.md.get_historical_candles(symbol, '1min', 60)
+df_5m = await self.md.get_historical_candles(symbol, '5min', 60)
+if df_15.empty or df_1h.empty:
+    return None
+
+# ضبط الفهرس مرة واحدة فقط لكل إطار
+for df in [df_15, df_1h, df_1m, df_5m]:
+    if not isinstance(df.index, pd.DatetimeIndex):
+        df.set_index('date', inplace=True)
+    df.sort_index(inplace=True)
 
         df_15 = add_all_indicators(df_15)
         df_1h = add_emas(df_1h, [20,50])
